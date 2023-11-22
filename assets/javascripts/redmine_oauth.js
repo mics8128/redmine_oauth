@@ -71,6 +71,10 @@ function oauth_settings_visibility()
             div_oauth_options.show();
             div_oauth_options.find('#oauth_options_tenant').hide();
             break;
+        case 'Gitea':
+            div_oauth_options.show();
+            div_oauth_options.find('#oauth_options_tenant').hide();
+            break;
         default:
             break;
     }

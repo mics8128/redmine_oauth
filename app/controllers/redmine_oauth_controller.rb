@@ -42,6 +42,12 @@ class RedmineOauthController < AccountController
         state: oauth_csrf_token,
         scope: 'read_user'
       )
+    when 'Gitea'
+      redirect_to oauth_client.auth_code.authorize_url(
+        redirect_uri: oauth_callback_url,
+        state: oauth_csrf_token,
+        scope: 'openid profile email'
+      )
     when 'Okta'
       redirect_to oauth_client.auth_code.authorize_url(
         redirect_uri: oauth_callback_url,
@@ -71,6 +77,15 @@ class RedmineOauthController < AccountController
       userinfo_response = token.get('/api/v4/user', headers: { 'Accept' => 'application/json' })
       user_info = JSON.parse(userinfo_response.body)
       user_info['login'] = user_info['username']
+      email = user_info['email']
+    when 'Gitea'
+      token = oauth_client.auth_code.get_token(params['code'], redirect_uri: oauth_callback_url)
+      userinfo_response = token.get(
+        "/login/oauth/userinfo",
+        headers: { 'Accept' => 'application/json' }
+      )
+      user_info = JSON.parse(userinfo_response.body)
+      user_info['login'] = user_info['preferred_username']
       email = user_info['email']
     when 'Okta'
       token = oauth_client.auth_code.get_token(params['code'], redirect_uri: oauth_callback_url)
@@ -166,6 +181,14 @@ class RedmineOauthController < AccountController
           site: site,
           authorize_url: '/oauth/authorize',
           token_url: '/oauth/token'
+        )
+      when 'Gitea'
+        OAuth2::Client.new(
+          Setting.plugin_redmine_oauth[:client_id],
+          Setting.plugin_redmine_oauth[:client_secret],
+          site: site,
+          authorize_url: '/login/oauth/authorize',
+          token_url: '/login/oauth/access_token'
         )
       when 'Okta'
         OAuth2::Client.new(
